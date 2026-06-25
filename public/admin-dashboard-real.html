@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head><title>Azadi Admin - Real Data</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui;background:#f0f4f8;display:flex;min-height:100vh}
+.sidebar{width:250px;background:#004080;color:#fff;padding:25px;position:fixed;top:0;left:0;bottom:0}
+.sidebar-brand{font-size:22px;font-weight:700;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:25px}
+.sidebar-brand span{display:block;font-size:12px;opacity:0.6;font-weight:400}
+.sidebar a{display:block;padding:12px 15px;color:rgba(255,255,255,0.7);text-decoration:none;border-radius:8px;margin:4px 0;cursor:pointer}
+.sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.1);color:#fff}
+.badge{background:#c7254e;color:#fff;padding:1px 10px;border-radius:12px;font-size:11px;float:right}
+.main{margin-left:250px;padding:30px;flex:1}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
+.header h1{font-size:24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}
+.stat-card{background:#fff;border-radius:12px;padding:25px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.stat-number{font-size:32px;font-weight:700;color:#004080}
+.stat-label{color:#666;font-size:14px}
+.card{background:#fff;border-radius:12px;padding:25px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:25px}
+.card h3{margin-bottom:15px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #eee}
+th{color:#666;font-size:12px;text-transform:uppercase}
+.status{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block}
+.active{background:#d1fae5;color:#1e7b4a}
+.pending{background:#fef3c7;color:#b45309}
+.inactive{background:#fee2e2;color:#b91c1c}
+.reviewing{background:#dbeafe;color:#1a5a9e}
+.accepted{background:#d1fae5;color:#1e7b4a}
+.btn{background:#004080;color:#fff;border:none;padding:8px 20px;border-radius:40px;cursor:pointer}
+.hidden{display:none}
+.refresh-btn{background:#1a5a9e;color:#fff;border:none;padding:8px 16px;border-radius:40px;cursor:pointer}
+.loading{color:#999;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-brand">Azadi<span>Real Data</span></div>
+<a href="#" class="active" onclick="showSection('overview')">Overview</a>
+<a href="#" onclick="showSection('users')">Users <span class="badge" id="userBadge">0</span></a>
+<a href="#" onclick="showSection('applications')">Apps <span class="badge" id="appBadge">0</span></a>
+<a href="#" onclick="showSection('feedback')">Feedback <span class="badge" id="feedbackBadge">0</span></a>
+<a href="#" onclick="showSection('volunteers')">Volunteers <span class="badge" id="volunteerBadge">0</span></a>
+<a href="#" onclick="showSection('settings')">Settings</a>
+</div>
+<div class="main">
+<div class="header"><div><h1 id="pageTitle">Overview</h1><p id="pageSub">Real data from MongoDB</p></div><button class="refresh-btn" onclick="loadAllData()">Refresh</button></div>
+<div id="overview">
+<div class="stats">
+<div class="stat-card"><div class="stat-number" id="statUsers">-</div><div class="stat-label">Total Users</div></div>
+<div class="stat-card"><div class="stat-number" id="statApps">-</div><div class="stat-label">Applications</div></div>
+<div class="stat-card"><div class="stat-number" id="statRevenue">-</div><div class="stat-label">Revenue</div></div>
+<div class="stat-card"><div class="stat-number" id="statFeedback">-</div><div class="stat-label">Feedback</div></div>
+</div>
+<div class="card"><h3>Recent Users</h3><div id="recentUsers"><div class="loading">Loading from database...</div></div></div>
+<div class="card"><h3>Recent Feedback</h3><div id="recentFeedback"><div class="loading">Loading from database...</div></div></div>
+</div>
+<div id="users" class="hidden"><div class="card"><h3>All Users</h3><div id="allUsersTable"><div class="loading">Loading...</div></div></div></div>
+<div id="applications" class="hidden"><div class="card"><h3>Applications</h3><div id="allAppsTable"><div class="loading">Loading...</div></div></div></div>
+<div id="feedback" class="hidden"><div class="card"><h3>All Feedback</h3><div id="allFeedbackTable"><div class="loading">Loading...</div></div></div></div>
+<div id="volunteers" class="hidden"><div class="card"><h3>Volunteers</h3><div id="volunteersTable"><div class="loading">Loading...</div></div></div></div>
+<div id="settings" class="hidden"><div class="card"><h3>Settings</h3><p>Admin preferences</p><button class="btn">Save</button></div></div>
+</div>
+<script>
+const API_URL="http://localhost:5001/api";
+async function fetchAPI(e){try{const r=await fetch(API_URL+"/admin/"+e);const d=await r.json();return d.success?d:null}catch(e){return null}}
+async function loadAllData(){
+const s=await fetchAPI("stats");if(s){document.getElementById("statUsers").textContent=s.stats.totalUsers||0;document.getElementById("statApps").textContent=s.stats.totalApplications||0;document.getElementById("statRevenue").textContent="$"+(s.stats.totalRevenue||0);document.getElementById("statFeedback").textContent=s.stats.totalFeedback||0;document.getElementById("userBadge").textContent=s.stats.totalUsers||0;document.getElementById("appBadge").textContent=s.stats.totalApplications||0;document.getElementById("feedbackBadge").textContent=s.stats.totalFeedback||0;document.getElementById("volunteerBadge").textContent=s.stats.totalVolunteers||0}
+const u=await fetchAPI("users");if(u&&u.users){let h="<table><tr><th>Name</th><th>Email</th><th>Status</th></tr>";u.users.slice(0,5).forEach(x=>{h+="<tr><td><strong>"+(x.fullName||"N/A")+"</strong></td><td>"+x.email+"</td><td><span class=\"status "+(x.emailVerified?"active":"pending")+"\">"+(x.emailVerified?"Active":"Pending")+"</span></td></tr>"});h+="</table>";document.getElementById("recentUsers").innerHTML=h;h="<table><tr><th>Name</th><th>Email</th><th>Status</th></tr>";u.users.forEach(x=>{h+="<tr><td><strong>"+(x.fullName||"N/A")+"</strong></td><td>"+x.email+"</td><td><span class=\"status "+(x.emailVerified?"active":"pending")+"\">"+(x.emailVerified?"Active":"Pending")+"</span></td></tr>"});h+="</table>";document.getElementById("allUsersTable").innerHTML=h}
+const a=await fetchAPI("applications");if(a&&a.applications){let h="<table><tr><th>Student</th><th>University</th><th>Status</th></tr>";a.applications.forEach(x=>{const n=x.userId?x.userId.fullName:"Unknown";h+="<tr><td><strong>"+n+"</strong></td><td>"+x.universityName+"</td><td><span class=\"status "+x.status+"\">"+x.status+"</span></td></tr>"});h+="</table>";document.getElementById("allAppsTable").innerHTML=h}
+const f=await fetchAPI("feedback");if(f&&f.feedback){let h="<table><tr><th>User</th><th>Rating</th><th>Comment</th></tr>";f.feedback.slice(0,5).forEach(x=>{const n=x.userId?x.userId.fullName:x.name||"Anonymous";h+="<tr><td><strong>"+n+"</strong></td><td>"+"⭐".repeat(x.rating||0)+"</td><td>"+(x.comment||"")+"</td></tr>"});h+="</table>";document.getElementById("recentFeedback").innerHTML=h;h="<table><tr><th>User</th><th>Rating</th><th>Comment</th></tr>";f.feedback.forEach(x=>{const n=x.userId?x.userId.fullName:x.name||"Anonymous";h+="<tr><td><strong>"+n+"</strong></td><td>"+"⭐".repeat(x.rating||0)+"</td><td>"+(x.comment||"")+"</td></tr>"});h+="</table>";document.getElementById("allFeedbackTable").innerHTML=h}
+const v=await fetchAPI("volunteers");if(v&&v.volunteers){let h="<table><tr><th>Name</th><th>Email</th><th>Status</th></tr>";v.volunteers.forEach(x=>{h+="<tr><td><strong>"+x.fullName+"</strong></td><td>"+x.email+"</td><td><span class=\"status "+x.status+"\">"+x.status+"</span></td></tr>"});h+="</table>";document.getElementById("volunteersTable").innerHTML=h}
+}
+function showSection(s){document.querySelectorAll("[id$=overview],[id$=users],[id$=applications],[id$=feedback],[id$=volunteers],[id$=settings]").forEach(e=>e.classList.add("hidden"));document.getElementById(s).classList.remove("hidden");const t={overview:"Overview",users:"Users",applications:"Applications",feedback:"Feedback",volunteers:"Volunteers",settings:"Settings"};document.getElementById("pageTitle").textContent=t[s]||"Overview"}
+document.addEventListener("DOMContentLoaded",loadAllData);
+</script>
+</body>
+</html>
+
