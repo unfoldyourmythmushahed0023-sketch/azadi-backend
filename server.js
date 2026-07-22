@@ -378,3 +378,4 @@ app.listen(PORT, () => {
     console.log(`📈 Analytics: http://localhost:${PORT}/api/admin/analytics`);
     console.log('═══════════════════════════════════');
 });
+// Redeploy trigger - Tue Jul 21 21:17:06 PDT 2026
