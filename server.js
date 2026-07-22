@@ -10,7 +10,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Stripe (disabled for now - will work with real key later)
+// Stripe (disabled for now)
 const stripe = null;
 console.log('⚠️ Stripe is disabled (no valid API key)');
 
@@ -29,6 +29,7 @@ if (!fs.existsSync(DATA_FILE)) {
         users: [],
         payments: [],
         interviews: [],
+        universityAdmins: [],
         analytics: {
             totalUsers: 0,
             totalPayments: 0,
@@ -44,7 +45,7 @@ function readData() {
     try {
         return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
     } catch (e) {
-        return { users: [], payments: [], interviews: [], analytics: {} };
+        return { users: [], payments: [], interviews: [], universityAdmins: [], analytics: {} };
     }
 }
 
@@ -70,26 +71,19 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const userData = req.body;
         
-        // Validate required fields
         const required = ['fullName', 'username', 'email', 'password', 'country'];
         for (const field of required) {
             if (!userData[field]) {
-                return res.status(400).json({ 
-                    error: `Missing required field: ${field}` 
-                });
+                return res.status(400).json({ error: `Missing required field: ${field}` });
             }
         }
         
-        // Check if user already exists
         const data = readData();
         const existingUser = data.users.find(u => u.email === userData.email);
         if (existingUser) {
-            return res.status(409).json({ 
-                error: 'User with this email already exists' 
-            });
+            return res.status(409).json({ error: 'User with this email already exists' });
         }
         
-        // Create user object
         const newUser = {
             id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
             ...userData,
@@ -124,7 +118,6 @@ app.post('/api/auth/register', async (req, res) => {
             profilePicture: userData.profilePicture || ''
         };
         
-        // Save user
         data.users.push(newUser);
         
         // Update analytics
@@ -132,7 +125,6 @@ app.post('/api/auth/register', async (req, res) => {
         data.analytics.registrationsByCountry[userData.country] = 
             (data.analytics.registrationsByCountry[userData.country] || 0) + 1;
         
-        // Track payment if completed
         if (userData.paymentStatus === 'completed' || userData.paymentStatus === 'waived') {
             const amount = userData.paymentAmount || getFeeByCountry(userData.country);
             if (amount > 0) {
@@ -145,14 +137,12 @@ app.post('/api/auth/register', async (req, res) => {
             }
         }
         
-        // Track interview if scheduled
         if (userData.interviewType) {
             data.analytics.totalInterviews += 1;
         }
         
         writeData(data);
         
-        // Log to terminal
         console.log('═══════════════════════════════════');
         console.log('🟢 NEW USER REGISTERED');
         console.log(`👤 Name: ${newUser.fullName}`);
@@ -176,10 +166,7 @@ app.post('/api/auth/register', async (req, res) => {
         
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ 
-            error: 'Registration failed', 
-            details: error.message 
-        });
+        res.status(500).json({ error: 'Registration failed', details: error.message });
     }
 });
 
@@ -190,13 +177,11 @@ app.post('/api/create-payment-intent', async (req, res) => {
     try {
         const { amount, email, fullName } = req.body;
         
-        // If Stripe is disabled, simulate payment
         if (!stripe) {
             console.log('💳 Simulated payment:');
             console.log(`   Amount: $${amount}`);
             console.log(`   User: ${fullName} (${email})`);
             
-            // Store payment in data
             const data = readData();
             data.payments.push({
                 id: `pay_${Date.now()}`,
@@ -215,7 +200,6 @@ app.post('/api/create-payment-intent', async (req, res) => {
             });
         }
         
-        // Real Stripe payment
         const paymentIntent = await stripe.paymentIntents.create({
             amount: Math.round(amount * 100),
             currency: 'usd',
@@ -285,9 +269,9 @@ app.get('/api/admin/payments', (req, res) => {
     try {
         const data = readData();
         res.json({
-            payments: data.payments,
-            total: data.payments.length,
-            totalAmount: data.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+            payments: data.payments || [],
+            total: (data.payments || []).length,
+            totalAmount: (data.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0)
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -338,12 +322,114 @@ app.put('/api/admin/users/:id', (req, res) => {
     }
 });
 
+// Delete user
+app.delete('/api/admin/users/:id', (req, res) => {
+    try {
+        const data = readData();
+        data.users = data.users.filter(u => u.id !== req.params.id);
+        writeData(data);
+        res.json({ success: true, message: 'User deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================================
+// 🏫 UNIVERSITY MANAGEMENT ROUTES
+// ============================================================
+
+// Get all universities
+app.get('/api/admin/universities', (req, res) => {
+    try {
+        const data = readData();
+        res.json({
+            universities: data.universityAdmins || [],
+            total: (data.universityAdmins || []).length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create university admin
+app.post('/api/admin/university/create', (req, res) => {
+    try {
+        const { university, adminEmail, adminPassword, country } = req.body;
+        const data = readData();
+        
+        if (data.universityAdmins?.find(u => u.email === adminEmail)) {
+            return res.status(409).json({ error: 'University admin already exists' });
+        }
+        
+        const newAdmin = {
+            id: `uni_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            university,
+            email: adminEmail,
+            password: adminPassword,
+            country: country || 'N/A',
+            status: 'active',
+            createdAt: new Date().toISOString()
+        };
+        
+        if (!data.universityAdmins) data.universityAdmins = [];
+        data.universityAdmins.push(newAdmin);
+        writeData(data);
+        
+        console.log('═══════════════════════════════════');
+        console.log('🏫 NEW UNIVERSITY CREATED');
+        console.log(`📚 University: ${university}`);
+        console.log(`📧 Email: ${adminEmail}`);
+        console.log('═══════════════════════════════════');
+        
+        res.status(201).json({
+            success: true,
+            message: `University ${university} created successfully!`,
+            admin: newAdmin
+        });
+        
+    } catch (error) {
+        console.error('Error creating university:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete university
+app.delete('/api/admin/university/:id', (req, res) => {
+    try {
+        const data = readData();
+        data.universityAdmins = (data.universityAdmins || []).filter(u => u.id !== req.params.id);
+        writeData(data);
+        res.json({ success: true, message: 'University removed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update university status
+app.put('/api/admin/university/:id', (req, res) => {
+    try {
+        const { status } = req.body;
+        const data = readData();
+        const university = (data.universityAdmins || []).find(u => u.id === req.params.id);
+        
+        if (!university) {
+            return res.status(404).json({ error: 'University not found' });
+        }
+        
+        university.status = status || 'active';
+        writeData(data);
+        res.json({ success: true, university });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============================================================
 // 🏠 HEALTH & ROOT ROUTES
 // ============================================================
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
+    res.status(200).json({
+        status: 'ok',
         message: 'Server is running!',
         timestamp: new Date().toISOString()
     });
@@ -364,6 +450,7 @@ app.get('/', (req, res) => {
             <li><a href="/api/admin/analytics">GET /api/admin/analytics</a> - Analytics</li>
             <li><a href="/api/admin/payments">GET /api/admin/payments</a> - Payments</li>
             <li><a href="/api/admin/interviews">GET /api/admin/interviews</a> - Interviews</li>
+            <li><a href="/api/admin/universities">GET /api/admin/universities</a> - Universities</li>
         </ul>
     `);
 });
@@ -376,6 +463,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 Admin Dashboard: http://localhost:${PORT}/api/admin/users`);
     console.log(`📈 Analytics: http://localhost:${PORT}/api/admin/analytics`);
+    console.log(`🏫 Universities: http://localhost:${PORT}/api/admin/universities`);
     console.log('═══════════════════════════════════');
 });
-// Redeploy trigger - Tue Jul 21 21:17:06 PDT 2026
