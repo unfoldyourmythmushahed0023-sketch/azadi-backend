@@ -17,7 +17,7 @@ console.log('⚠️ Stripe is disabled (no valid API key)');
 // Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use(express.static('public'));  
 // ============================================================
 // 📁 DATA STORE
 // ============================================================
