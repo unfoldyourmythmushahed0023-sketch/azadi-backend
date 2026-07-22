@@ -17,7 +17,8 @@ console.log('⚠️ Stripe is disabled (no valid API key)');
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));  
+app.use(express.static('public'));
+
 // ============================================================
 // 📁 DATA STORE
 // ============================================================
@@ -419,6 +420,165 @@ app.put('/api/admin/university/:id', (req, res) => {
         university.status = status || 'active';
         writeData(data);
         res.json({ success: true, university });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================================
+// 🏫 UNIVERSITY LOGIN ROUTE (FIXED!)
+// ============================================================
+
+// University Admin Login
+app.post('/api/uni/login', (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const data = readData();
+        
+        const admin = data.universityAdmins?.find(u => u.email === email && u.password === password);
+        
+        if (!admin) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        res.json({
+            success: true,
+            admin: {
+                id: admin.id,
+                university: admin.university,
+                email: admin.email,
+                country: admin.country
+            }
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================================
+// 🏫 UNIVERSITY DASHBOARD ROUTES
+// ============================================================
+
+// Get university dashboard data
+app.get('/api/uni/dashboard/:universityId', (req, res) => {
+    try {
+        const data = readData();
+        const universityId = req.params.universityId;
+        
+        const admin = data.universityAdmins?.find(u => u.id === universityId);
+        if (!admin) {
+            return res.status(404).json({ error: 'University not found' });
+        }
+        
+        // Get students who applied to this university
+        const uniData = data.universityData?.[admin.university] || { students: [] };
+        const studentIds = uniData.students || [];
+        const students = data.users.filter(u => studentIds.includes(u.id));
+        
+        res.json({
+            university: admin.university,
+            totalStudents: students.length,
+            pending: students.filter(s => s.applicationStatus === 'pending').length,
+            accepted: students.filter(s => s.applicationStatus === 'accepted').length,
+            rejected: students.filter(s => s.applicationStatus === 'rejected').length,
+            students: students.map(s => ({
+                id: s.id,
+                fullName: s.fullName,
+                email: s.email,
+                country: s.country,
+                applicationStatus: s.applicationStatus || 'pending',
+                registrationDate: s.registrationDate
+            }))
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update student status for university
+app.post('/api/uni/pipeline/update', (req, res) => {
+    try {
+        const { studentId, universityId, status } = req.body;
+        const data = readData();
+        
+        const student = data.users.find(u => u.id === studentId);
+        if (!student) return res.status(404).json({ error: 'Student not found' });
+        
+        student.applicationStatus = status;
+        student.lastStatusUpdate = new Date().toISOString();
+        
+        writeData(data);
+        
+        res.json({
+            success: true,
+            message: `Student moved to ${status}`,
+            status: status
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get student profile for university
+app.get('/api/uni/student/:studentId/:universityId', (req, res) => {
+    try {
+        const data = readData();
+        const student = data.users.find(u => u.id === req.params.studentId);
+        if (!student) return res.status(404).json({ error: 'Student not found' });
+        
+        res.json({
+            id: student.id,
+            fullName: student.fullName,
+            username: student.username,
+            email: student.email,
+            phone: student.phone,
+            dob: student.dob,
+            country: student.country,
+            address: student.address,
+            education: student.education || 'N/A',
+            gpa: student.gpa || 'N/A',
+            languages: student.languages || [],
+            applicationStatus: student.applicationStatus || 'pending',
+            payment: student.payment,
+            interview: student.interview,
+            registrationDate: student.registrationDate
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Export students as CSV
+app.get('/api/uni/export/:universityId', (req, res) => {
+    try {
+        const data = readData();
+        const uniData = data.universityData?.[req.params.universityId];
+        const students = data.users.filter(u => uniData?.students?.includes(u.id) || u.appliedUniversity === req.params.universityId);
+        
+        const headers = ['Name', 'Email', 'Country', 'Phone', 'GPA', 'Status', 'Registered'];
+        let csv = headers.join(',') + '\n';
+        
+        students.forEach(s => {
+            const row = [
+                `"${s.fullName || 'N/A'}"`,
+                s.email || 'N/A',
+                s.country || 'N/A',
+                s.phone || 'N/A',
+                s.gpa || 'N/A',
+                s.applicationStatus || 'pending',
+                new Date(s.registrationDate).toLocaleDateString()
+            ];
+            csv += row.join(',') + '\n';
+        });
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=students_${req.params.universityId}_${Date.now()}.csv`);
+        res.send(csv);
+        
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
