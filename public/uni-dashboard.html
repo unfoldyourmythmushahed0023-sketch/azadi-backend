@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏫 University Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; color: #1a1a1a; min-height: 100vh; }
+        
+        .navbar { background: #00375c; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px; }
+        .navbar h1 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        .navbar .nav-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .navbar .nav-right button { background: rgba(255,255,255,0.15); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+        .navbar .nav-right button:hover { background: rgba(255,255,255,0.25); }
+        .navbar .logout-btn { background: #dc3545; }
+        .navbar .logout-btn:hover { background: #c82333; }
+        .navbar .status-badge { background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #00375c; }
+        .stat-card .label { color: #666; font-size: 0.8rem; margin-top: 4px; }
+        .stat-card .icon { font-size: 1.5rem; margin-bottom: 5px; }
+        
+        .tabs { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tabs button { padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; background: white; color: #333; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .tabs button:hover { background: #00375c; color: white; }
+        .tabs button.active { background: #00375c; color: white; }
+        .tabs button i { margin-right: 6px; }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .table-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap: 10px; }
+        .table-header h3 { color: #00375c; font-size: 1.1rem; }
+        .table-header .search-box { display: flex; gap: 10px; flex-wrap: wrap; }
+        .table-header .search-box input { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; min-width: 180px; }
+        .table-header .search-box input:focus { outline: none; border-color: #00375c; }
+        .table-header .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .btn-primary { background: #00375c; color: white; }
+        .btn-primary:hover { background: #002640; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 10px 14px; text-align: left; font-weight: 600; color: #00375c; border-bottom: 2px solid #ddd; font-size: 0.85rem; }
+        td { padding: 10px 14px; border-bottom: 1px solid #ddd; vertical-align: middle; font-size: 0.9rem; }
+        tr:hover { background: #f8f9fa; }
+        
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 600; }
+        .status-badge.received { background: #e3f2fd; color: #1565c0; }
+        .status-badge.reviewing { background: #fff3cd; color: #856404; }
+        .status-badge.interviewed { background: #d1ecf1; color: #0c5460; }
+        .status-badge.accepted { background: #d4edda; color: #155724; }
+        .status-badge.rejected { background: #f8d7da; color: #721c24; }
+        .status-badge.scheduled { background: #d1ecf1; color: #0c5460; }
+        
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state i { font-size: 3rem; margin-bottom: 15px; opacity: 0.3; }
+        
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .chart-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .chart-box h4 { color: #00375c; margin-bottom: 15px; font-size: 1rem; }
+        .chart-box canvas { max-height: 200px; max-width: 100%; }
+        
+        .chat-container { max-height: 350px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px; }
+        .chat-message { margin-bottom: 10px; display: flex; flex-direction: column; }
+        .chat-message.university { align-items: flex-start; }
+        .chat-message.student { align-items: flex-end; }
+        .chat-message .bubble { max-width: 70%; padding: 10px 15px; border-radius: 12px; word-wrap: break-word; }
+        .chat-message.university .bubble { background: #00375c; color: white; border-radius: 12px 12px 12px 0; }
+        .chat-message.student .bubble { background: white; color: #333; border-radius: 12px 12px 0 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .chat-message .time { font-size: 0.65rem; color: #999; margin-top: 3px; }
+        .chat-input { display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        .chat-input input:focus { outline: none; border-color: #00375c; }
+        .chat-input button { padding: 10px 20px; background: #00375c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .chat-input button:hover { background: #002640; }
+        
+        .pipeline-container { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0; }
+        .pipeline-stage { flex: 1; min-width: 160px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .pipeline-stage h4 { color: #00375c; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .pipeline-stage .count { font-size: 1.8rem; font-weight: 700; color: #00375c; }
+        .pipeline-stage .students-list { max-height: 250px; overflow-y: auto; }
+        .pipeline-stage .student-item { padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 0.8rem; cursor: pointer; transition: background 0.2s; }
+        .pipeline-stage .student-item:hover { background: #f8f9fa; }
+        .pipeline-stage .student-item.selected { background: #e3f2fd; border-left: 3px solid #00375c; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; max-width: 650px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 30px; animation: fadeIn 0.3s ease; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { color: #00375c; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
+        .modal-close:hover { color: #dc3545; }
+        .detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid #ddd; }
+        .detail-row strong { width: 120px; color: #00375c; flex-shrink: 0; }
+        .modal-actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        .toast { position: fixed; bottom: 30px; right: 30px; background: white; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; z-index: 2000; border-left: 4px solid #28a745; transform: translateY(100px); opacity: 0; transition: all 0.4s ease; max-width: 400px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-left-color: #dc3545; }
+        .toast i { font-size: 1.2rem; }
+        .toast.success i { color: #28a745; }
+        .toast.error i { color: #dc3545; }
+        
+        @media (max-width: 992px) { .charts-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .pipeline-container { flex-direction: column; }
+            .pipeline-stage { min-width: auto; }
+            .tabs { justify-content: center; }
+            .tabs button { font-size: 0.8rem; padding: 8px 14px; }
+            .table-header { flex-direction: column; align-items: stretch; }
+        }
+        @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<!-- ========================================================== -->
+<!-- NAVBAR -->
+<!-- ========================================================== -->
+<nav class="navbar">
+    <h1><i class="fas fa-university"></i> <span id="uniName">Loading...</span></h1>
+    <div class="nav-right">
+        <span class="status-badge"><i class="fas fa-circle" style="color:#2ecc71;"></i> Online</span>
+        <button onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+</nav>
+
+<!-- ========================================================== -->
+<!-- MAIN CONTAINER -->
+<!-- ========================================================== -->
+<div class="container">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card"><div class="icon">📊</div><div class="number" id="totalStudents">0</div><div class="label">Total Applicants</div></div>
+        <div class="stat-card"><div class="icon">📋</div><div class="number" id="pendingCount">0</div><div class="label">Pending Review</div></div>
+        <div class="stat-card"><div class="icon">🎯</div><div class="number" id="interviewedCount">0</div><div class="label">Interviewed</div></div>
+        <div class="stat-card"><div class="icon">✅</div><div class="number" id="acceptedCount">0</div><div class="label">Accepted</div></div>
+        <div class="stat-card"><div class="icon">❌</div><div class="number" id="rejectedCount">0</div><div class="label">Rejected</div></div>
+        <div class="stat-card"><div class="icon">🌍</div><div class="number" id="countryCount">0</div><div class="label">Countries</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+        <button data-tab="students"><i class="fas fa-users"></i> Students</button>
+        <button data-tab="pipeline"><i class="fas fa-route"></i> Pipeline</button>
+        <button data-tab="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- TAB: DASHBOARD -->
+    <!-- ========================================================== -->
+    <div class="tab-content active" id="tab-dashboard">
+        <div class="table-container">
+            <div class="table-header">
+                <h3>🆕 Recent Applicants</h3>
+                <span style="color:#999;font-size:0.8rem;">Latest 10 applicants</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Country</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+                    <tbody id="recentStudentsBody"><tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>No students yet</p></td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- TAB: STUDENTS -->
+    <!-- ========================================================== -->
+    <div class="tab-content" id="tab-students">
+        <div class="table-container">
+            <div class="table-header">
+                <h3>👥 All Students</h3>
+                <div class="search-box">
+                    <input type="text" id="studentSearch" placeholder="🔍 Search students..." oninput="loadData()">
+                    <button class="btn btn-primary btn-sm" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Country</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="studentsBody"><tr><td colspan="6" class="empty-state"><i class="fas fa-users"></i><p>No students yet</p></td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- TAB: PIPELINE -->
+    <!-- ========================================================== -->
+    <div class="tab-content" id="tab-pipeline">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+            <button class="btn btn-success btn-sm" onclick="moveSelected('reviewing')"><i class="fas fa-arrow-right"></i> Review</button>
+            <button class="btn btn-warning btn-sm" onclick="moveSelected('interviewed')"><i class="fas fa-video"></i> Interview</button>
+            <button class="btn btn-success btn-sm" onclick="moveSelected('accepted')"><i class="fas fa-check"></i> Accept</button>
+            <button class="btn btn-danger btn-sm" onclick="moveSelected('rejected')"><i class="fas fa-times"></i> Reject</button>
+            <span style="font-size:0.8rem;color:#999;margin-left:10px;align-self:center;">💡 Click a student to select them</span>
+        </div>
+        <div class="pipeline-container" id="pipelineContainer">
+            <div class="pipeline-stage"><h4>📩 Received <span class="count" id="pipeReceived">0</span></h4><div class="students-list" id="pipeReceivedList"></div></div>
+            <div class="pipeline-stage"><h4>📋 Reviewing <span class="count" id="pipeReviewing">0</span></h4><div class="students-list" id="pipeReviewingList"></div></div>
+            <div class="pipeline-stage"><h4>🎯 Interviewed <span class="count" id="pipeInterviewed">0</span></h4><div class="students-list" id="pipeInterviewedList"></div></div>
+            <div class="pipeline-stage"><h4>✅ Accepted <span class="count" id="pipeAccepted">0</span></h4><div class="students-list" id="pipeAcceptedList"></div></div>
+            <div class="pipeline-stage"><h4>❌ Rejected <span class="count" id="pipeRejected">0</span></h4><div class="students-list" id="pipeRejectedList"></div></div>
+        </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- TAB: ANALYTICS -->
+    <!-- ========================================================== -->
+    <div class="tab-content" id="tab-analytics">
+        <div class="charts-grid">
+            <div class="chart-box"><h4>📈 Application Trends</h4><canvas id="trendChart"></canvas></div>
+            <div class="chart-box"><h4>🌍 Students by Country</h4><canvas id="countryChart"></canvas></div>
+            <div class="chart-box"><h4>📊 Status Breakdown</h4><canvas id="statusChart"></canvas></div>
+            <div class="chart-box"><h4>📈 Cumulative Growth</h4><canvas id="growthChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- STUDENT DETAIL MODAL -->
+<!-- ========================================================== -->
+<div class="modal" id="studentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>👤 Student Profile</h3>
+            <button class="modal-close" onclick="closeModal('studentModal')">&times;</button>
+        </div>
+        <div id="studentDetail">
+            <div class="detail-row"><strong>Name:</strong> <span id="sName">-</span></div>
+            <div class="detail-row"><strong>Email:</strong> <span id="sEmail">-</span></div>
+            <div class="detail-row"><strong>Username:</strong> <span id="sUsername">-</span></div>
+            <div class="detail-row"><strong>Country:</strong> <span id="sCountry">-</span></div>
+            <div class="detail-row"><strong>Phone:</strong> <span id="sPhone">-</span></div>
+            <div class="detail-row"><strong>GPA:</strong> <span id="sGpa">-</span></div>
+            <div class="detail-row"><strong>Education:</strong> <span id="sEducation">-</span></div>
+            <div class="detail-row"><strong>Languages:</strong> <span id="sLanguages">-</span></div>
+            <div class="detail-row"><strong>Status:</strong> <span id="sStatus">-</span></div>
+            <div class="detail-row"><strong>Registered:</strong> <span id="sDate">-</span></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-success btn-sm" onclick="quickAction('accepted')"><i class="fas fa-check"></i> Accept</button>
+            <button class="btn btn-danger btn-sm" onclick="quickAction('rejected')"><i class="fas fa-times"></i> Reject</button>
+            <button class="btn btn-warning btn-sm" onclick="quickAction('interviewed')"><i class="fas fa-video"></i> Interview</button>
+            <button class="btn btn-primary btn-sm" onclick="quickAction('reviewing')"><i class="fas fa-search"></i> Review</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- TOAST -->
+<!-- ========================================================== -->
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Success!</span>
+</div>
+
+<!-- ========================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ========================================================== -->
+<script>
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const API_URL = 'https://azadi-backend-1.onrender.com/api';
+let uniAdmin = JSON.parse(localStorage.getItem('uniAdmin') || 'null');
+let allStudents = [];
+let selectedStudentId = null;
+let charts = {};
+
+// ===== AUTH CHECK =====
+if (!uniAdmin) { window.location.href = '/uni-login.html'; }
+document.getElementById('uniName').textContent = uniAdmin.university;
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const msg = document.getElementById('toastMessage');
+    toast.className = `toast ${type}`;
+    msg.textContent = message;
+    toast.querySelector('i').className = `fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}`;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+});
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+function loadData() {
+    fetch(`${API_URL}/uni/dashboard/${uniAdmin.id}`)
+        .then(res => res.json())
+        .then(data => {
+            allStudents = data.students || [];
+            updateStats(data);
+            updateRecentStudents(data.students || []);
+            updateStudentsTable(data.students || []);
+            updatePipeline(data.students || []);
+            updateAnalytics(data);
+        })
+        .catch(err => { showToast('Error loading data', 'error'); console.error(err); });
+}
+
+// ============================================================
+// UPDATE STATS
+// ============================================================
+function updateStats(data) {
+    document.getElementById('totalStudents').textContent = data.totalStudents || 0;
+    document.getElementById('pendingCount').textContent = data.pending || 0;
+    document.getElementById('interviewedCount').textContent = data.interviewed || 0;
+    document.getElementById('acceptedCount').textContent = data.accepted || 0;
+    document.getElementById('rejectedCount').textContent = data.rejected || 0;
+    const countries = new Set((data.students || []).map(s => s.country));
+    document.getElementById('countryCount').textContent = countries.size || 0;
+}
+
+// ============================================================
+// UPDATE RECENT STUDENTS
+// ============================================================
+function updateRecentStudents(students) {
+    const tbody = document.getElementById('recentStudentsBody');
+    const recent = students.slice(-10).reverse();
+    if (recent.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>No students yet</p></td></tr>'; return; }
+    tbody.innerHTML = recent.map(s => `
+        <tr>
+            <td><strong>${s.fullName || 'N/A'}</strong></td>
+            <td>${s.email || 'N/A'}</td>
+            <td>${s.country || 'N/A'}</td>
+            <td><span class="status-badge ${s.applicationStatus || 'received'}">${s.applicationStatus || 'received'}</span></td>
+            <td>${s.registrationDate ? new Date(s.registrationDate).toLocaleDateString() : 'N/A'}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewStudent('${s.id}')"><i class="fas fa-eye"></i></button></td>
+        </tr>
+    `).join('');
+}
+
+// ============================================================
+// UPDATE STUDENTS TABLE
+// ============================================================
+function updateStudentsTable(students) {
+    const tbody = document.getElementById('studentsBody');
+    const search = document.getElementById('studentSearch')?.value?.toLowerCase() || '';
+    const filtered = students.filter(s => 
+        s.fullName?.toLowerCase().includes(search) ||
+        s.email?.toLowerCase().includes(search) ||
+        s.country?.toLowerCase().includes(search)
+    );
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fas fa-users"></i><p>${search ? 'No matches' : 'No students'}</p></td></tr>`;
+        return;
+    }
+    tbody.innerHTML = filtered.map(s => `
+        <tr>
+            <td><strong>${s.fullName || 'N/A'}</strong></td>
+            <td>${s.email || 'N/A'}</td>
+            <td>${s.country || 'N/A'}</td>
+            <td><span class="status-badge ${s.applicationStatus || 'received'}">${s.applicationStatus || 'received'}</span></td>
+            <td>${s.registrationDate ? new Date(s.registrationDate).toLocaleDateString() : 'N/A'}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="viewStudent('${s.id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-success btn-sm" onclick="selectStudent('${s.id}');updateStudentStatus('${s.id}','accepted')"><i class="fas fa-check"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="selectStudent('${s.id}');updateStudentStatus('${s.id}','rejected')"><i class="fas fa-times"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ============================================================
+// VIEW STUDENT
+// ============================================================
+function viewStudent(id) {
+    fetch(`${API_URL}/uni/student/${id}/${uniAdmin.id}`)
+        .then(res => res.json())
+        .then(s => {
+            document.getElementById('sName').textContent = s.fullName || '-';
+            document.getElementById('sEmail').textContent = s.email || '-';
+            document.getElementById('sUsername').textContent = s.username || '-';
+            document.getElementById('sCountry').textContent = s.country || '-';
+            document.getElementById('sPhone').textContent = s.phone || '-';
+            document.getElementById('sGpa').textContent = s.gpa || 'N/A';
+            document.getElementById('sEducation').textContent = s.education || 'N/A';
+            document.getElementById('sLanguages').textContent = s.languages?.join(', ') || 'N/A';
+            document.getElementById('sStatus').innerHTML = `<span class="status-badge ${s.applicationStatus || 'received'}">${s.applicationStatus || 'received'}</span>`;
+            document.getElementById('sDate').textContent = s.registrationDate ? new Date(s.registrationDate).toLocaleString() : '-';
+            selectedStudentId = s.id;
+            openModal('studentModal');
+        })
+        .catch(err => { showToast('Error loading profile', 'error'); console.error(err); });
+}
+
+// ============================================================
+// PIPELINE
+// ============================================================
+function updatePipeline(students) {
+    const statuses = ['received', 'reviewing', 'interviewed', 'accepted', 'rejected'];
+    const counts = { received: 0, reviewing: 0, interviewed: 0, accepted: 0, rejected: 0 };
+    
+    statuses.forEach(status => {
+        const filtered = students.filter(s => (s.applicationStatus || 'received') === status);
+        counts[status] = filtered.length;
+        const list = document.getElementById(`pipe${status.charAt(0).toUpperCase() + status.slice(1)}List`);
+        if (filtered.length === 0) {
+            list.innerHTML = '<div style="color:#999;font-size:0.8rem;padding:5px;">No students</div>';
+            return;
+        }
+        list.innerHTML = filtered.map(s => `
+            <div class="student-item ${selectedStudentId === s.id ? 'selected' : ''}" onclick="selectStudent('${s.id}')" id="student-${s.id}">
+                <strong>${s.fullName || 'N/A'}</strong>
+                <div style="font-size:0.7rem;color:#999;">${s.country || 'N/A'}</div>
+            </div>
+        `).join('');
+    });
+    
+    document.getElementById('pipeReceived').textContent = counts.received;
+    document.getElementById('pipeReviewing').textContent = counts.reviewing;
+    document.getElementById('pipeInterviewed').textContent = counts.interviewed;
+    document.getElementById('pipeAccepted').textContent = counts.accepted;
+    document.getElementById('pipeRejected').textContent = counts.rejected;
+}
+
+function selectStudent(id) {
+    selectedStudentId = id;
+    document.querySelectorAll('.student-item').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`student-${id}`);
+    if (el) el.classList.add('selected');
+    showToast(`✅ Selected student`, 'success');
+}
+
+function moveSelected(status) {
+    if (!selectedStudentId) { showToast('❌ Select a student first', 'error'); return; }
+    updateStudentStatus(selectedStudentId, status);
+}
+
+function quickAction(status) {
+    if (selectedStudentId) { updateStudentStatus(selectedStudentId, status); }
+    else { showToast('❌ Select a student first', 'error'); }
+}
+
+function updateStudentStatus(studentId, status) {
+    fetch(`${API_URL}/uni/pipeline/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, universityId: uniAdmin.id, status })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`✅ Student moved to ${status}`, 'success');
+            loadData();
+            selectedStudentId = null;
+        }
+    })
+    .catch(err => showToast('❌ Error updating status', 'error'));
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+function updateAnalytics(data) {
+    const months = data.months || {};
+    const countries = data.countries || {};
+    const statuses = data.statuses || {};
+    const recent = (data.recentStudents || []).slice(-7);
+    
+    // Trend Chart
+    const ctx1 = document.getElementById('trendChart')?.getContext('2d');
+    if (ctx1) {
+        if (charts.trend) charts.trend.destroy();
+        charts.trend = new Chart(ctx1, {
+            type: 'line',
+            data: { labels: Object.keys(months), datasets: [{ label: 'Applications', data: Object.values(months), borderColor: '#00375c', backgroundColor: 'rgba(0,55,92,0.1)', fill: true, tension: 0.4 }] },
+            options: { responsive: true, plugins: { legend: { display: true } } }
+        });
+    }
+    
+    // Country Chart
+    const ctx2 = document.getElementById('countryChart')?.getContext('2d');
+    if (ctx2) {
+        if (charts.country) charts.country.destroy();
+        charts.country = new Chart(ctx2, {
+            type: 'pie',
+            data: { labels: Object.keys(countries), datasets: [{ data: Object.values(countries), backgroundColor: ['#00375c','#004080','#0066a0','#0080c0','#4da6cf','#80c4e8'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+    
+    // Status Chart
+    const ctx3 = document.getElementById('statusChart')?.getContext('2d');
+    if (ctx3) {
+        if (charts.status) charts.status.destroy();
+        charts.status = new Chart(ctx3, {
+            type: 'doughnut',
+            data: { labels: ['Received', 'Reviewing', 'Interviewed', 'Accepted', 'Rejected'], datasets: [{ data: [statuses.received||0, statuses.reviewing||0, statuses.interviewed||0, statuses.accepted||0, statuses.rejected||0], backgroundColor: ['#e3f2fd','#fff3cd','#d1ecf1','#d4edda','#f8d7da'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+    
+    // Growth Chart
+    const ctx4 = document.getElementById('growthChart')?.getContext('2d');
+    if (ctx4) {
+        if (charts.growth) charts.growth.destroy();
+        charts.growth = new Chart(ctx4, {
+            type: 'bar',
+            data: { labels: recent.map(s => new Date(s.registrationDate).toLocaleDateString()), datasets: [{ label: 'Cumulative Growth', data: recent.map((_,i) => i+1), backgroundColor: '#00375c', borderRadius: 4 }] },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportCSV() {
+    window.open(`${API_URL}/uni/export/${uniAdmin.id}`, '_blank');
+    showToast('📥 Downloading CSV...', 'success');
+}
+
+// ============================================================
+// LOGOUT
+// ============================================================
+function logout() {
+    if (confirm('Logout?')) {
+        localStorage.removeItem('uniAdmin');
+        window.location.href = '/uni-login.html';
+    }
+}
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+document.querySelectorAll('.tabs button').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tabs button').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${this.dataset.tab}`).classList.add('active');
+        if (this.dataset.tab === 'analytics') setTimeout(loadData, 200);
+    });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadData();
+setInterval(loadData, 30000);
+
+console.log('🏫 University Dashboard Loaded');
+console.log(`📚 ${uniAdmin.university}`);
+console.log('🔄 Auto-refresh every 30 seconds');
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏫 University Admin Login - Azadi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background: linear-gradient(135deg, #00375c, #002640);
+            padding: 20px;
+        }
+        .login-box { 
+            background: white; 
+            padding: 50px 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            max-width: 420px; 
+            width: 100%; 
+        }
+        .login-box .logo { text-align: center; margin-bottom: 30px; }
+        .login-box .logo h1 { 
+            font-size: 2rem; 
+            color: #00375c; 
+            font-weight: 700;
+        }
+        .login-box .logo p { color: #666; font-size: 0.9rem; margin-top: 5px; }
+        .login-box .logo i { color: #00375c; font-size: 2.5rem; margin-bottom: 10px; }
+        .login-box .form-group { margin-bottom: 20px; }
+        .login-box label { 
+            display: block; 
+            font-weight: 600; 
+            margin-bottom: 6px; 
+            color: #00375c; 
+            font-size: 0.9rem; 
+        }
+        .login-box input { 
+            width: 100%; 
+            padding: 14px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            transition: 0.3s; 
+        }
+        .login-box input:focus { 
+            outline: none; 
+            border-color: #00375c; 
+            box-shadow: 0 0 0 3px rgba(0, 55, 92, 0.1);
+        }
+        .login-box button { 
+            width: 100%; 
+            padding: 14px; 
+            background: #00375c; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.3s; 
+        }
+        .login-box button:hover { 
+            background: #002640; 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(0, 55, 92, 0.3);
+        }
+        .login-box .error { 
+            color: #dc3545; 
+            text-align: center; 
+            margin-top: 15px; 
+            display: none; 
+        }
+        .login-box .demo-info { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            font-size: 0.8rem; 
+            color: #666; 
+        }
+        .login-box .demo-info code { 
+            background: #e9ecef; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            color: #00375c; 
+        }
+        .login-box .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #00375c;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .login-box .back-link:hover { text-decoration: underline; }
+        
+        @media (max-width: 480px) {
+            .login-box { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="logo">
+            <i class="fas fa-university"></i>
+            <h1>🏫 University Admin</h1>
+            <p>Login to manage your applicants</p>
+        </div>
+        <form id="uniLoginForm">
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email Address</label>
+                <input type="email" id="uniEmail" placeholder="admin@university.edu" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="uniPassword" placeholder="Enter your password" required>
+            </div>
+            <button type="submit"><i class="fas fa-sign-in-alt"></i> Login</button>
+            <div class="error" id="uniLoginError">❌ Invalid email or password</div>
+        </form>
+        <div class="demo-info">
+            <strong>📚 Demo Universities:</strong><br>
+            📧 <code>admin@oxford.edu</code> | 🔑 <code>password123</code>
+        </div>
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    </div>
+
+    <script>
+        document.getElementById('uniLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('uniEmail').value.trim();
+            const password = document.getElementById('uniPassword').value.trim();
+            const errorEl = document.getElementById('uniLoginError');
+            
+            if (!email || !password) {
+                errorEl.textContent = '❌ Please fill in all fields';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://azadi-backend-1.onrender.com/api/uni/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('uniAdmin', JSON.stringify(data.admin));
+                    window.location.href = '/uni-dashboard.html';
+                } else {
+                    errorEl.textContent = '❌ ' + (data.error || 'Invalid credentials');
+                    errorEl.style.display = 'block';
+                }
+            } catch (error) {
+                errorEl.textContent = '❌ Connection error. Please try again.';
+                errorEl.style.display = 'block';
+                console.error('Login error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
