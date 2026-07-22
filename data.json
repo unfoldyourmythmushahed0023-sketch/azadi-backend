@@ -1,0 +1,17 @@
+{
+  "users": [],
+  "payments": [],
+  "interviews": [],
+  "analytics": {
+    "totalUsers": 0,
+    "totalPayments": 0,
+    "totalInterviews": 0,
+    "registrationsByCountry": {},
+    "paymentsByMethod": {
+      "stripe": 0,
+      "paypal": 0,
+      "bank": 0,
+      "waived": 0
+    }
+  }
+}
