@@ -1,4 +1,3 @@
-cat > ~/Desktop/azadi-backend/emailService.js << 'ENDOFFILE'
 // ============================================================
 // AZADI EMAIL SERVICE - AWS SES
 // ============================================================
@@ -15,7 +14,6 @@ const sesClient = new SESClient({
 const FROM_EMAIL = process.env.SES_FROM_EMAIL || 'noreply@azadiunfoldurmyth.com';
 const FROM_NAME = 'Azadi Global';
 
-// In-memory store for verification codes
 const verificationCodes = new Map();
 
 function generateCode() {
@@ -30,7 +28,7 @@ async function sendVerificationEmail(email, name) {
     const htmlBody = getVerificationEmailHTML(name || email.split('@')[0], code);
 
     const command = new SendEmailCommand({
-        Source: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+        Source: '"' + FROM_NAME + '" <' + FROM_EMAIL + '>',
         Destination: { ToAddresses: [email] },
         Message: {
             Subject: { Data: 'Azadi Verification Code', Charset: 'UTF-8' },
@@ -78,6 +76,3 @@ function getVerificationEmailHTML(name, code) {
 }
 
 module.exports = { sendVerificationEmail, verifyCode };
-ENDOFFILE
-echo "✅ emailService.js created!"
-ls -la emailService.js
