@@ -8,6 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1132.0",
     "@sendgrid/mail": "^8.1.6",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
