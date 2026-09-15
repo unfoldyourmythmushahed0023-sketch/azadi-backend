@@ -1,0 +1,87 @@
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const userSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: "user" },
+    createdAt: { type: Date, default: Date.now }
+});
+
+userSchema.pre("save", async function() {
+    if (this.isModified("password")) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+});
+
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("User", userSchema);
+mongosh --eval "use azadi; db.dropDatabase()"mongosh --eval "use azadi; db.dropDatabase()"
+node -e "
+const mongoose = require('mongoose');
+const User = require('./src/models/User');
+require('dotenv').config();
+
+async function createAdmin() {
+    await mongoose.connect(process.env.MONGODB_URI);
+    const admin = new User({
+        fullName: 'Admin User',
+        email: 'admin@azadi.com',
+        password: 'Admin123!',
+        role: 'admin'
+    });
+    await admin.save();
+    console.log('✅ Admin created!');
+    process.exit();
+}
+createAdmin();
+"
+mongosh --eval "use azadi; db.dropDatabase()"
+node -e "
+const mongoose = require('mongoose');
+const User = require('./src/models/User');
+require('dotenv').config();
+
+async function createAdmin() {
+    await mongoose.connect(process.env.MONGODB_URI);
+    const admin = new User({
+        fullName: 'Admin User',
+        email: 'admin@azadi.com',
+        password: 'Admin123!',
+        role: 'admin'
+    });
+    await admin.save();
+    console.log('✅ Admin created!');
+    process.exit();
+}
+createAdmin();
+"
+mongosh --eval "use azadi; db.dropDatabase()"
+
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const userSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: "user" },
+    createdAt: { type: Date, default: Date.now }
+});
+
+userSchema.pre("save", async function() {
+    if (this.isModified("password")) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+});
+
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("User", userSchema);
+

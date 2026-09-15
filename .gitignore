@@ -1,10 +1,22 @@
+# Dependencies
 node_modules/
+
+# Environment
 .env
-.env.save
-*.save
-*.backup
-*.broken
-*.old
-uploads/
-.DS_Store
+.env.local
+.env.production
+
+# Backups
+_backups/
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
