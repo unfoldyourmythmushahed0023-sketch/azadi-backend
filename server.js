@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const { ObjectId } = require('mongodb');
 const { connectDB, getDB, closeDB } = require('./config/database');
+const emailService = require('./emailService');
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -918,6 +920,39 @@ app.post('/api/send-university-confirmation', async (req, res) => {
             success: false, 
             message: error.message 
         });
+    }
+});
+
+app.post('/api/send-verification', async (req, res) => {
+    try {
+        const { email, name } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+        console.log('Sending verification to:', email);
+        const code = await emailService.sendVerificationEmail(email, name);
+        res.json({ success: true, message: 'Verification code sent', code: code });
+    } catch (error) {
+        console.error('Send verification error:', error);
+        res.status(500).json({ success: false, message: 'Failed to send verification email', error: error.message });
+    }
+});
+
+app.post('/api/verify-code', (req, res) => {
+    try {
+        const { email, code } = req.body;
+        if (!email || !code) {
+            return res.status(400).json({ success: false, message: 'Email and code required' });
+        }
+        const result = emailService.verifyCode(email, code);
+        if (result.valid) {
+            console.log('Email verified:', email);
+            res.json({ success: true, message: 'Email verified successfully' });
+        } else {
+            res.status(400).json({ success: false, message: result.error });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
