@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const dbName = 'azadi_platform';
+const dbName = 'azadi';
 
 let db;
 let client;
