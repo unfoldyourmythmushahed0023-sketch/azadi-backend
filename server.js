@@ -104,6 +104,46 @@ app.post('/api/admin/incoming', async (req, res) => {
 });
 
 // ============================================================
+// ADMIN INCOMING - GET (read side for the dashboard)
+// ============================================================
+app.get('/api/admin/incoming', async (req, res) => {
+    try {
+        const db = getDB();
+        const collection = db.collection('admin_incoming');
+
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const since = req.query.since;
+
+        const query = {};
+        if (since) {
+            const sinceDate = new Date(since);
+            if (!isNaN(sinceDate.getTime())) {
+                query.receivedAt = { $gt: sinceDate.toISOString() };
+            }
+        }
+
+        const items = await collection
+            .find(query)
+            .sort({ receivedAt: -1 })
+            .limit(limit)
+            .toArray();
+
+        res.json({
+            success: true,
+            count: items.length,
+            items: items
+        });
+    } catch (error) {
+        console.error('Admin incoming GET error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+
+// ============================================================
 // APPLICATIONS - POST
 // ============================================================
 app.post('/api/applications', async (req, res) => {
