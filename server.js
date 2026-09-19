@@ -7,6 +7,23 @@ const emailService = require('./emailService');
 
 
 const app = express();
+
+// ============================================================
+// ADMIN AUTH MIDDLEWARE
+// ============================================================
+function requireAdminKey(req, res, next) {
+    const expected = process.env.ADMIN_API_KEY;
+    if (!expected) {
+        console.warn('⚠️  ADMIN_API_KEY not set — admin routes are unprotected!');
+        return next();
+    }
+    const provided = req.headers['x-admin-key'] || req.query.admin_key;
+    if (provided !== expected) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    next();
+}
+
 const PORT = process.env.PORT || 5001;
 
 // ============================================================
@@ -83,7 +100,7 @@ app.post('/api/auth/register', async (req, res) => {
 // ============================================================
 // ADMIN INCOMING DATA
 // ============================================================
-app.post('/api/admin/incoming', async (req, res) => {
+app.post('/api/admin/incoming', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const collection = db.collection('admin_incoming');
@@ -106,7 +123,7 @@ app.post('/api/admin/incoming', async (req, res) => {
 // ============================================================
 // ADMIN INCOMING - GET (read side for the dashboard)
 // ============================================================
-app.get('/api/admin/incoming', async (req, res) => {
+app.get('/api/admin/incoming', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const collection = db.collection('admin_incoming');
@@ -192,7 +209,7 @@ app.get('/api/applications', async (req, res) => {
 // ============================================================
 // ADMIN APPLICATIONS - GET ALL
 // ============================================================
-app.get('/api/admin/applications', async (req, res) => {
+app.get('/api/admin/applications', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const applications = await db.collection('applications').find({}).toArray();
@@ -209,7 +226,7 @@ app.get('/api/admin/applications', async (req, res) => {
 // ============================================================
 // ADMIN APPLICATIONS - ACCEPT
 // ============================================================
-app.put('/api/admin/applications/:id/accept', async (req, res) => {
+app.put('/api/admin/applications/:id/accept', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const id = req.params.id;
@@ -251,7 +268,7 @@ app.put('/api/admin/applications/:id/accept', async (req, res) => {
 // ============================================================
 // ADMIN APPLICATIONS - REJECT
 // ============================================================
-app.put('/api/admin/applications/:id/reject', async (req, res) => {
+app.put('/api/admin/applications/:id/reject', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const id = req.params.id;
@@ -312,7 +329,7 @@ app.get('/api/applications/university/:universityId', async (req, res) => {
 // ============================================================
 // ADMIN USERS
 // ============================================================
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const users = await db.collection('users').find({}).toArray();
@@ -329,7 +346,7 @@ app.get('/api/admin/users', async (req, res) => {
 // ============================================================
 // ADMIN ANALYTICS
 // ============================================================
-app.get('/api/admin/analytics', async (req, res) => {
+app.get('/api/admin/analytics', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const totalUsers = await db.collection('users').countDocuments();
@@ -354,7 +371,7 @@ app.get('/api/admin/analytics', async (req, res) => {
 // ============================================================
 // ADMIN UNIVERSITIES
 // ============================================================
-app.get('/api/admin/universities', async (req, res) => {
+app.get('/api/admin/universities', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const universities = await db.collection('users')
@@ -373,7 +390,7 @@ app.get('/api/admin/universities', async (req, res) => {
 // ============================================================
 // ADMIN PAYMENTS - GET ALL
 // ============================================================
-app.get('/api/admin/payments', async (req, res) => {
+app.get('/api/admin/payments', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const payments = await db.collection('payments').find({}).toArray();
@@ -390,7 +407,7 @@ app.get('/api/admin/payments', async (req, res) => {
 // ============================================================
 // ADMIN PAYMENTS - VERIFY
 // ============================================================
-app.put('/api/admin/payments/:id/verify', async (req, res) => {
+app.put('/api/admin/payments/:id/verify', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const id = req.params.id;
@@ -431,7 +448,7 @@ app.put('/api/admin/payments/:id/verify', async (req, res) => {
 // ============================================================
 // ADMIN PAYMENTS - CREATE
 // ============================================================
-app.post('/api/admin/payments', async (req, res) => {
+app.post('/api/admin/payments', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const data = req.body;
@@ -514,7 +531,7 @@ app.put('/api/payments/:id/verify', async (req, res) => {
 // ============================================================
 // ADMIN INTERVIEWS
 // ============================================================
-app.get('/api/admin/interviews', async (req, res) => {
+app.get('/api/admin/interviews', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const interviews = await db.collection('interviews').find({}).toArray();
@@ -622,7 +639,7 @@ app.delete('/api/interviews/cancel/:id', async (req, res) => {
 // ============================================================
 // ADMIN UNIVERSITY - CREATE
 // ============================================================
-app.post('/api/admin/university/create', async (req, res) => {
+app.post('/api/admin/university/create', requireAdminKey, async (req, res) => {
     try {
         const db = getDB();
         const { university, adminEmail, adminPassword, country } = req.body;
