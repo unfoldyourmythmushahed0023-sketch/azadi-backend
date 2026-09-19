@@ -75,4 +75,36 @@ function getVerificationEmailHTML(name, code) {
     '</div></div></body></html>';
 }
 
+async function sendInterviewConfirmationEmail(data) {
+    const body = `Hello & Salaam
+
+Your interview for the Azadi — Cross-Border Academic Legacy platform has been confirmed.
+
+Date: ${data.date}
+Time: ${data.time}
+Type: ${data.type}
+
+Join your Zoom interview here:
+https://zoom.us/j/5847637329
+
+Please save this link — you'll use it at your scheduled time. Make sure your audio and video are working before joining.
+
+If you need to reschedule, please reply to this email.
+
+Warm regards,
+Azadi's Programming Team
+from Azadi — Cross-Border Academic Legacy`;
+
+    const command = new SendEmailCommand({
+        Source: `Azadi — Cross-Border Academic Legacy <${FROM_EMAIL}>`,
+        ReplyToAddresses: ['unfoldyourmyth.mushahed.0023@gmail.com'],
+        Destination: { ToAddresses: [data.userEmail] },
+        Message: {
+            Subject: { Data: 'Your Azadi Interview is Confirmed' },
+            Body: { Text: { Data: body } }
+        }
+    });
+    await sesClient.send(command);
+}
+
 module.exports = { sendVerificationEmail, verifyCode, sendInterviewConfirmationEmail };
