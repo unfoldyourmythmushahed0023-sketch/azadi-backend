@@ -75,4 +75,4 @@ function getVerificationEmailHTML(name, code) {
     '</div></div></body></html>';
 }
 
-module.exports = { sendVerificationEmail, verifyCode };
+module.exports = { sendVerificationEmail, verifyCode, sendInterviewConfirmationEmail };

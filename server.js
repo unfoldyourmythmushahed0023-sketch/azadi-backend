@@ -562,6 +562,14 @@ app.post('/api/interviews/schedule', async (req, res) => {
         
         console.log('📅 Interview scheduled:', data);
         
+        // Send confirmation email (non-blocking — interview still saves if email fails)
+        try {
+            await emailService.sendInterviewConfirmationEmail(data);
+            console.log('📧 Interview confirmation email sent to', data.userEmail);
+        } catch (emailErr) {
+            console.error('📧 Interview email failed:', emailErr.message);
+        }
+        
         res.json({ 
             success: true, 
             interview: { _id: result.insertedId, ...data },
