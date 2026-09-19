@@ -548,12 +548,15 @@ app.get('/api/interviews/list', async (req, res) => {
 // ============================================================
 // INTERVIEWS - SCHEDULE
 // ============================================================
+const ZOOM_LINK = 'https://zoom.us/j/5847637329';
+
 app.post('/api/interviews/schedule', async (req, res) => {
     try {
         const db = getDB();
         const data = req.body;
         data.createdAt = new Date().toISOString();
         data.status = data.status || 'scheduled';
+        data.zoomLink = ZOOM_LINK;
         
         const result = await db.collection('interviews').insertOne(data);
         
@@ -561,7 +564,8 @@ app.post('/api/interviews/schedule', async (req, res) => {
         
         res.json({ 
             success: true, 
-            interview: { _id: result.insertedId, ...data }
+            interview: { _id: result.insertedId, ...data },
+            zoomLink: ZOOM_LINK
         });
     } catch (error) {
         console.error('Error scheduling interview:', error);
