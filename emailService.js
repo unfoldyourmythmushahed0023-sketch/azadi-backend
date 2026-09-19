@@ -87,13 +87,18 @@ Type: ${data.type}
 Join your Zoom interview here:
 https://zoom.us/j/5847637329
 
-Please save this link — you'll use it at your scheduled time. Make sure your audio and video are working before joining.
+⚠️ Before your interview, please have ready:
+
+1. A government-issued ID card (Tazkira or passport) — you will need to show it during the interview to verify your identity and nationality.
+2. You must currently be residing in your home country at the time of application. Please be prepared to confirm this.
+
+Please save this Zoom link — you'll use it at your scheduled time. Make sure your audio and video are working before joining.
 
 If you need to reschedule, please reply to this email.
 
 Warm regards,
-Azadi's Programming Team
-from Azadi — Cross-Border Academic Legacy`;
+from Azadi's leading team
+Azadi — Cross-Border Academic Legacy`;
 
     const command = new SendEmailCommand({
         Source: `Azadi — Cross-Border Academic Legacy <${FROM_EMAIL}>`,
